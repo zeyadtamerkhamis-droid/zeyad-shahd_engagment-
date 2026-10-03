@@ -1845,8 +1845,8 @@ const EVENT = {
       Use ONLY the public Project URL and the anon / publishable key.
       Never paste the service_role key into this file.
    -------------------------------------------------------------------------- */
-const SUPABASE_URL = "YOUR_SUPABASE_URL";
-const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+const SUPABASE_URL = "https://ytkypxcqgzzlwvfzlfyt.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0a3lweGNxZ3p6bHd2ZnpsZnl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEwNTI2MjksImV4cCI6MjEwNjYyODYyOX0.JKGnwDU7L4pCT0X9mLBj-s4RQMXz4WqM-W2a4LyLuOE";
 const SUPABASE_TABLE = "guest_messages";
 
 /* --------------------------------------------------------------------------
@@ -2671,6 +2671,39 @@ const MESSAGE_RULES = {
       } finally { if (t) clearTimeout(t); }
     }
 
+    /* Messages written before the wall was connected were kept on the guest's
+       own device. Once Supabase is connected, send them up automatically the
+       next time that guest opens the invitation, then clear the local copy. */
+    async function syncLocalMessages() {
+      if (!configured) return 0;
+      const pending = readLocal();
+      if (!pending.length) return 0;
+      const keep = [];
+      let sent = 0;
+      for (const m of pending) {
+        const entry = {
+          name: clean(m.name, MESSAGE_RULES.nameMax, false),
+          relationship: clean(m.relationship, MESSAGE_RULES.relationshipMax, false) || null,
+          message: clean(m.message, MESSAGE_RULES.messageMax, true)
+        };
+        if (!entry.name || entry.message.length < 2) continue;
+        try {
+          const res = await fetchWithTimeout(baseUrl, {
+            method: "POST",
+            headers: headers({ Prefer: "return=minimal" }),
+            body: JSON.stringify(entry)
+          });
+          if (res.ok || res.status === 409) { sent += 1; }
+          else if (res.status === 401 || res.status === 403 || res.status === 404 || res.status >= 500) { keep.push(m); }
+          // Any other rejection (for example limits) is final: drop it.
+        } catch (e) {
+          keep.push(m);
+        }
+      }
+      if (keep.length) writeLocal(keep); else local.remove(LOCAL_KEY);
+      return sent;
+    }
+
     async function load(newestIsNew) {
       if (retry) retry.hidden = true;
       if (!configured) {
@@ -2771,7 +2804,17 @@ const MESSAGE_RULES = {
     });
 
     if (retry) retry.addEventListener("click", () => load(false));
-    load(false);
+
+    (async () => {
+      let synced = 0;
+      try { synced = await syncLocalMessages(); } catch (e) { synced = 0; }
+      await load(false);
+      if (synced > 0) {
+        setStatus(synced === 1
+          ? "Your earlier message has now been added to the wall. Thank you."
+          : "Your earlier messages have now been added to the wall. Thank you.");
+      }
+    })();
   }
 
   /* ======================================================================
