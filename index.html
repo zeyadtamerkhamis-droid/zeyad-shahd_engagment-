@@ -108,7 +108,6 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  scroll-behavior: smooth;
   scroll-padding-top: var(--safe-top);
   background: var(--white);
 }
@@ -121,7 +120,6 @@ body {
   line-height: 1.7;
   color: var(--navy-900);
   background: var(--white);
-  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -607,7 +605,7 @@ body.is-sealed .progress { display: none; }
 /* ==========================================================================
    STAGE 2 — INVITATION
    ========================================================================== */
-.invitation { position: relative; outline: none; }
+.invitation { position: relative; outline: none; overflow-x: clip; }
 body.is-sealed .invitation { visibility: hidden; }
 
 .section-marble {
@@ -736,7 +734,6 @@ section, .hero, .closing {
   aspect-ratio: .8;
   transform: rotateX(var(--tx, 0deg)) rotateY(var(--ty, 0deg));
   transition: transform .8s var(--ease-out);
-  transform-style: preserve-3d;
 }
 .arch-window {
   position: absolute;
@@ -809,7 +806,6 @@ section, .hero, .closing {
     var(--marble) center / 300px,
     var(--paper);
   box-shadow: 0 1px 0 var(--blue-200) inset, 0 -1px 0 rgba(255, 255, 255, .9), 0 18px 30px -14px rgba(11, 33, 66, .45);
-  transform: translateZ(30px);
 }
 .arch-ledge::after {
   content: "";
@@ -1210,12 +1206,11 @@ body.is-open .hero-sub { animation: title-in 1.2s var(--ease-out) .6s both; }
 .wall-title { font-weight: 400; font-size: 1.15rem; letter-spacing: .12em; color: var(--navy-800); margin-bottom: 18px; }
 .wall-state { color: var(--blue-600); margin-bottom: 16px; }
 .wall-state:empty { display: none; }
-.wall-list { columns: 1; column-gap: 20px; text-align: left; }
-@media (min-width: 680px) { .wall-list { columns: 2; } }
-@media (min-width: 1000px) { .wall-list { columns: 3; } }
+.wall-list { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; text-align: left; }
+@media (min-width: 680px) { .wall-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1000px) { .wall-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .note {
-  break-inside: avoid;
-  margin-bottom: 20px;
+  margin: 0;
   padding: 20px 20px 16px;
   border-radius: 6px;
   background: var(--paper);
@@ -1287,11 +1282,9 @@ body.is-open .hero-sub { animation: title-in 1.2s var(--ease-out) .6s both; }
   gap: 8px;
   padding: 6px;
   border-radius: 999px;
-  background: rgba(11, 33, 66, .78);
+  background: rgba(11, 33, 66, .92);
   border: 1px solid rgba(196, 220, 241, .35);
   box-shadow: 0 12px 26px -12px rgba(2, 8, 22, .7);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
   transition: opacity .4s, transform .4s var(--ease-out);
 }
 .audio-dock[hidden] { display: none; }
@@ -1376,6 +1369,44 @@ body.is-open .hero-sub { animation: title-in 1.2s var(--ease-out) .6s both; }
   .message-form { padding: 34px 34px 28px; }
 }
 
+/* ---------- Blooming blue flowers ---------- */
+.blooms {
+  position: fixed;
+  inset: 0;
+  z-index: 55;              /* above the page and the envelope, below the music control */
+  pointer-events: none;     /* never blocks taps or scrolling */
+  overflow: hidden;
+  contain: strict;
+}
+.bloom {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--size, 26px);
+  height: var(--size, 26px);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.bloom svg { width: 100%; height: 100%; overflow: visible; }
+
+/* ---------- Phones and tablets: keep scrolling light ---------- */
+.hero.is-offscreen .arch-children picture,
+.hero.is-offscreen .scroll-line::after { animation-play-state: paused; }
+@media (hover: none) {
+  /* No pointer tilt on touch screens, so drop the permanent 3D layers */
+  .hero-arch { transform: none; }
+  body.is-open .hero-arch { animation-name: arch-in-flat; }
+  .details-card { transform: none; }
+  .print { perspective: none; }
+  .print-frame { transform: rotate(var(--tilt, 0deg)); }
+  .print-frame:hover { --tz: 0px; }
+  .print-frame.is-pressed { transform: rotate(var(--tilt, 0deg)) scale(.985); }
+}
+@keyframes arch-in-flat {
+  from { opacity: 0; transform: translateY(26px) scale(.95); }
+  to { opacity: 1; transform: none; }
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -1414,6 +1445,21 @@ body.is-open .hero-sub { animation: title-in 1.2s var(--ease-out) .6s both; }
     <symbol id="wreath" viewBox="0 0 132 128">
       <use href="#laurel" x="4" y="0" width="60" height="128"/>
       <use href="#laurel" x="4" y="0" width="60" height="128" transform="translate(132 0) scale(-1 1)"/>
+    </symbol>
+    <symbol id="bloom-flower" viewBox="-16 -16 32 32">
+      <g fill="var(--petal, #9CC3E6)" stroke="var(--edge, rgba(22,58,107,.35))" stroke-width=".6">
+        <path d="M0-2.2C4.6-4 6.4-11.2 0-15.2-6.4-11.2-4.6-4 0-2.2Z"/>
+        <path d="M0-2.2C4.6-4 6.4-11.2 0-15.2-6.4-11.2-4.6-4 0-2.2Z" transform="rotate(72)"/>
+        <path d="M0-2.2C4.6-4 6.4-11.2 0-15.2-6.4-11.2-4.6-4 0-2.2Z" transform="rotate(144)"/>
+        <path d="M0-2.2C4.6-4 6.4-11.2 0-15.2-6.4-11.2-4.6-4 0-2.2Z" transform="rotate(216)"/>
+        <path d="M0-2.2C4.6-4 6.4-11.2 0-15.2-6.4-11.2-4.6-4 0-2.2Z" transform="rotate(288)"/>
+      </g>
+      <g fill="none" stroke="rgba(255,255,255,.55)" stroke-width=".7" stroke-linecap="round">
+        <path d="M0-4.5V-11"/><path d="M0-4.5V-11" transform="rotate(72)"/><path d="M0-4.5V-11" transform="rotate(144)"/>
+        <path d="M0-4.5V-11" transform="rotate(216)"/><path d="M0-4.5V-11" transform="rotate(288)"/>
+      </g>
+      <circle r="3.4" fill="var(--center, #FFFFFF)"/>
+      <circle r="1.3" fill="var(--dot, #163A6B)"/>
     </symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></symbol>
@@ -1795,6 +1841,9 @@ body.is-open .hero-sub { animation: title-in 1.2s var(--ease-out) .6s both; }
     </footer>
   </main>
 
+  <!-- Blue flowers that bloom softly around the edges of the screen (decorative only) -->
+  <div class="blooms" id="blooms" aria-hidden="true"></div>
+
   <!-- Floating music control -->
   <div class="audio-dock" id="audio-dock" role="group" aria-label="Music controls" hidden>
     <button class="audio-btn" id="audio-toggle" type="button" aria-label="Play music">
@@ -1858,7 +1907,7 @@ const MESSAGE_RULES = {
   messageMax: 500,
   cooldownSeconds: 60,     // one message per device per minute
   minSecondsOnForm: 3,     // bots tend to submit instantly
-  wallLimit: 150
+  wallLimit: 1000           // newest messages shown on the wall
 };
 
 (function () {
@@ -2062,7 +2111,13 @@ const MESSAGE_RULES = {
       tilt.style.setProperty("--rx", (5 - y * 8).toFixed(2) + "deg");
     }
 
+    let revealed = false;
+    let finished = false;
+
+    // Runs once. The page is placed at the top only at this moment, never later.
     function revealInvitation() {
+      if (revealed) return;
+      revealed = true;
       const main = $("#invitation");
       document.body.classList.add("is-open");
       document.body.classList.remove("is-sealed");
@@ -2072,16 +2127,23 @@ const MESSAGE_RULES = {
     }
 
     function finish() {
+      if (finished) return;
+      finished = true;
       if (stage) {
         stage.classList.add("is-done");
         stage.setAttribute("aria-hidden", "true");
         stage.style.display = "none";
       }
+      // Move keyboard focus to the title only if the guest has not started scrolling,
+      // so focus can never pull the page back up.
       const title = $("#hero-title");
-      if (title) { try { title.focus({ preventScroll: true }); } catch (e) { title.focus(); } }
+      if (title && window.scrollY < 40) {
+        try { title.focus({ preventScroll: true }); } catch (e) { /* ignore */ }
+      }
     }
 
     async function cinematic() {
+      const stillRunning = () => !finished;
       const parts = $$(".env-back, .env-front, .flap-shadow, .env-flap, .env-shadow", stage);
       const whiteout = document.createElement("div");
       whiteout.className = "env-whiteout";
@@ -2098,6 +2160,7 @@ const MESSAGE_RULES = {
         { transform: sealBase + " scale(.9)", filter: "drop-shadow(0 2px 4px rgba(2,8,22,.4)) brightness(1.12)" }
       ], { duration: 200, easing: "cubic-bezier(.3,0,.6,1)" });
 
+      if (!stillRunning()) return;
       // 2. The seal breaks into two halves that fall away
       seal.classList.add("is-broken");
       const left = $(".seal-half--left", seal);
@@ -2113,6 +2176,7 @@ const MESSAGE_RULES = {
       animate($(".seal-glow", seal), [{ opacity: 1, transform: "scale(1.2)" }, { opacity: 0, transform: "scale(1.6)" }], { duration: 600, easing: "ease-out" });
       await wait(260);
 
+      if (!stillRunning()) return;
       // 3. The flap opens in 3D: lifts toward the viewer, then folds back
       const shadow = $(".flap-shadow", stage);
       animate(shadow, [{ opacity: 0.75 }, { opacity: 0 }], { duration: 380, easing: "ease-out" });
@@ -2127,6 +2191,7 @@ const MESSAGE_RULES = {
         { transform: "rotateX(180deg)" }
       ], { duration: 560, easing: "cubic-bezier(.15,.5,.3,1)" });
 
+      if (!stillRunning()) return;
       // 4. The card rises out of the envelope while the envelope settles lower
       const envH = button.getBoundingClientRect().height;
       animate(tilt, [{ transform: "translateY(0)" }, { transform: "translateY(" + Math.round(envH * 0.2) + "px)" }],
@@ -2137,6 +2202,7 @@ const MESSAGE_RULES = {
       ], { duration: 1000, easing: "cubic-bezier(.33,0,.2,1)" });
       await wait(140);
 
+      if (!stillRunning()) return;
       // 5. The camera moves into the card while the envelope falls away
       const r = card.getBoundingClientRect();
       const vw = window.innerWidth;
@@ -2164,6 +2230,7 @@ const MESSAGE_RULES = {
         { transform: "translate(" + dx + "px, " + dy + "px) " + base + " scale(" + scale + ")" }
       ], { duration: 1100, easing: "cubic-bezier(.6,0,.25,1)" });
 
+      if (!stillRunning()) return;
       // 6. Hand over to the invitation
       revealInvitation();
       await animate(stage, [{ opacity: 1 }, { opacity: 0 }], { duration: 650, easing: "ease-out" });
@@ -2181,6 +2248,9 @@ const MESSAGE_RULES = {
       if (button) button.disabled = true;
 
       const safetyNet = setTimeout(() => { revealInvitation(); finish(); }, 9000);
+      // If the guest switches apps mid-animation, finish immediately on return.
+      const onHidden = () => { if (document.visibilityState === "hidden") { revealInvitation(); finish(); } };
+      document.addEventListener("visibilitychange", onHidden);
       try {
         if (instant || reducedMotion() || !canAnimate) {
           revealInvitation();
@@ -2192,6 +2262,7 @@ const MESSAGE_RULES = {
         revealInvitation();
       }
       clearTimeout(safetyNet);
+      document.removeEventListener("visibilitychange", onHidden);
       finish();
     }
 
@@ -2254,14 +2325,26 @@ const MESSAGE_RULES = {
   })();
 
   function initScrollEffects() {
+    const cue = $(".scroll-cue");
+    if (cue) cue.addEventListener("click", (e) => {
+      const target = $("#message");
+      if (!target) return;
+      e.preventDefault();
+      try { target.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "start" }); }
+      catch (err) { target.scrollIntoView(); }
+    });
     const bar = $("#progress-bar");
     const depthEls = $$("[data-depth]");
     let ticking = false;
 
+    let pageMax = 1;
+    const measure = () => { pageMax = Math.max(1, document.documentElement.scrollHeight - window.innerHeight); };
+    measure();
+    window.addEventListener("load", measure);
     function update() {
       ticking = false;
       const vh = window.innerHeight;
-      const max = Math.max(1, document.documentElement.scrollHeight - vh);
+      const max = pageMax;
       if (bar) bar.style.transform = "scaleX(" + Math.min(1, window.scrollY / max).toFixed(4) + ")";
       if (reducedMotion()) return;
       depthEls.forEach((el) => {
@@ -2273,8 +2356,17 @@ const MESSAGE_RULES = {
     }
     function onScroll() { if (!ticking) { ticking = true; requestAnimationFrame(update); } }
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
+    window.addEventListener("resize", () => { measure(); onScroll(); }, { passive: true });
+    if ("ResizeObserver" in window) { try { new ResizeObserver(measure).observe(document.body); } catch (e) {} }
     update();
+
+    // Pause the floating childhood photo while it is off screen (saves phone battery and memory)
+    const heroEl = $(".hero");
+    if (heroEl && "IntersectionObserver" in window) {
+      new IntersectionObserver((entries) => {
+        entries.forEach((en) => heroEl.classList.toggle("is-offscreen", !en.isIntersecting));
+      }).observe(heroEl);
+    }
 
     // Hero: gentle 3D tilt and parallax on desktop pointers
     const hero = $(".hero");
@@ -2322,6 +2414,10 @@ const MESSAGE_RULES = {
     const done = $("#countdown-done");
     const note = $(".countdown-note");
     let timer = null;
+    let onScreen = false;
+    if (wrap && "IntersectionObserver" in window) {
+      new IntersectionObserver((entries) => { entries.forEach((en) => { onScreen = en.isIntersecting; }); }).observe(wrap);
+    }
 
     function set(name, value) {
       const el = units[name];
@@ -2329,7 +2425,7 @@ const MESSAGE_RULES = {
       const text = name === "days" ? String(value).padStart(2, "0") : pad(value);
       if (el.textContent === text) return;
       el.textContent = text;
-      if (!reducedMotion() && canAnimate && document.visibilityState !== "hidden") {
+      if (onScreen && !reducedMotion() && canAnimate && document.visibilityState !== "hidden") {
         animate(el, [
           { transform: "rotateX(-80deg) translateY(-.15em)", opacity: 0 },
           { transform: "none", opacity: 1 }
@@ -2818,6 +2914,105 @@ const MESSAGE_RULES = {
   }
 
   /* ======================================================================
+     BLOOMING BLUE FLOWERS
+     Small flowers open, drift and fade near the edges of the screen for as
+     long as the page is open. Lightweight by design:
+       - a fixed pool of elements is reused (no DOM growth over time)
+       - only transform and opacity are animated (no layout, no scroll impact)
+       - nothing is spawned while the tab is hidden
+       - turned off when the phone asks for reduced motion
+     ====================================================================== */
+  function initBlooms() {
+    const layer = $("#blooms");
+    if (!layer || !canAnimate || reducedMotion()) return;
+
+    const PALETTES = [
+      { petal: "#9CC3E6", edge: "rgba(22,58,107,.35)", center: "#FFFFFF", dot: "#163A6B" },
+      { petal: "#6E9CCB", edge: "rgba(11,33,66,.35)", center: "#EEF5FB", dot: "#0B2142" },
+      { petal: "#C4DCF1", edge: "rgba(58,95,138,.45)", center: "#FFFFFF", dot: "#3A5F8A" },
+      { petal: "#3F6FA6", edge: "rgba(255,255,255,.35)", center: "#DCEBF7", dot: "#FFFFFF" }
+    ];
+    const rand = (a, b) => a + Math.random() * (b - a);
+    const isSmall = () => window.innerWidth < 700;
+    const maxActive = () => (isSmall() ? 5 : 8);
+
+    const pool = [];
+    for (let i = 0; i < 8; i++) {
+      const el = document.createElement("span");
+      el.className = "bloom";
+      el.innerHTML = '<svg><use href="#bloom-flower"/></svg>';
+      layer.appendChild(el);
+      pool.push({ el, busy: false });
+    }
+    let active = 0;
+    let timer = null;
+
+    function spawn() {
+      if (active >= maxActive()) return;
+      const slot = pool.find((p) => !p.busy);
+      if (!slot) return;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const small = isSmall();
+      const size = Math.round(small ? rand(16, 26) : rand(22, 38));
+      // Keep flowers in the side margins so they don't sit on top of text.
+      // Phones have narrow margins, so flowers there stay close to the screen edge.
+      const band = small ? Math.max(size, vw * 0.07) : vw * 0.17;
+      const left = Math.random() < 0.5;
+      const offset = rand(size * 0.15, band - size * 0.5);
+      const x = (left ? offset : vw - offset) - size / 2;
+      const y = rand(0.1, 0.9) * vh - size / 2;
+      const pal = PALETTES[Math.floor(Math.random() * PALETTES.length)];
+      const el = slot.el;
+      el.style.setProperty("--size", size + "px");
+      el.style.setProperty("--petal", pal.petal);
+      el.style.setProperty("--edge", pal.edge);
+      el.style.setProperty("--center", pal.center);
+      el.style.setProperty("--dot", pal.dot);
+      const r0 = rand(-40, 40);
+      const r1 = r0 + rand(40, 110) * (Math.random() < 0.5 ? -1 : 1);
+      const dx = small ? rand(-8, 8) * (left ? 1 : -1) : rand(-18, 18);
+      const dy = rand(-70, -30);
+      const peak = small ? rand(0.5, 0.75) : rand(0.55, 0.85);
+      const base = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px) ";
+      slot.busy = true;
+      active += 1;
+      let anim;
+      try {
+        anim = el.animate([
+          { opacity: 0, transform: base + "rotate(" + r0 + "deg) scale(0)" },
+          { opacity: peak, transform: base + "rotate(" + (r0 + 12) + "deg) scale(1.08)", offset: 0.16 },
+          { opacity: peak, transform: base + "rotate(" + (r0 + 18) + "deg) scale(1)", offset: 0.26 },
+          { opacity: peak * 0.9, offset: 0.78, transform: "translate(" + (x + dx * 0.8).toFixed(1) + "px," + (y + dy * 0.8).toFixed(1) + "px) rotate(" + (r1 - 8) + "deg) scale(.98)" },
+          { opacity: 0, transform: "translate(" + (x + dx).toFixed(1) + "px," + (y + dy).toFixed(1) + "px) rotate(" + r1 + "deg) scale(.9)" }
+        ], { duration: rand(6500, 9500), easing: "ease-in-out", fill: "none" });
+      } catch (e) {
+        slot.busy = false; active -= 1; return;
+      }
+      const done = () => { slot.busy = false; active = Math.max(0, active - 1); };
+      anim.onfinish = done;
+      anim.oncancel = done;
+    }
+
+    function loop() {
+      if (document.visibilityState === "visible") spawn();
+      timer = setTimeout(loop, rand(1100, 2100));
+    }
+    // A gentle first bloom, then a steady rhythm
+    setTimeout(spawn, 600);
+    timer = setTimeout(loop, 1500);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && !timer) timer = setTimeout(loop, 800);
+    });
+    if (motionQuery && motionQuery.addEventListener) {
+      motionQuery.addEventListener("change", () => {
+        if (reducedMotion()) { clearTimeout(timer); timer = null; layer.style.display = "none"; }
+      });
+    }
+  }
+
+  /* ======================================================================
      MISSING ASSETS: hide gracefully instead of showing broken images
      ====================================================================== */
   function initAssetFallbacks() {
@@ -2846,6 +3041,7 @@ const MESSAGE_RULES = {
   safely("calendar", initCalendar);
   safely("gallery", initGallery);
   safely("messages", initMessages);
+  safely("flowers", initBlooms);
 
   if (motionQuery && motionQuery.addEventListener) {
     motionQuery.addEventListener("change", () => { if (reducedMotion()) $$("[data-reveal], #statement-words").forEach((t) => t.classList.add("is-visible")); });
